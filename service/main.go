@@ -4,7 +4,6 @@ package main
 
 import (
 	"OneCIBasesCreator/args"
-	"errors"
 	"fmt"
 	"golang.org/x/sys/windows/svc"
 	"log"
@@ -17,7 +16,7 @@ func main() {
 	var err error
 
 	if len(os.Args) < 2 {
-		handleError(errors.New("no command specified"))
+		handleError(errBadCommand("no command specified"))
 	}
 
 	instance, err := args.Instance()
@@ -50,7 +49,7 @@ func main() {
 	case "continue":
 		err = controlService(instance, svc.Continue, svc.Running)
 	default:
-		handleError(fmt.Errorf("invalid command %s", cmd))
+		handleError(errBadCommand(fmt.Sprintf("invalid command %s", cmd)))
 	}
 	handleError(err)
 	return
@@ -61,4 +60,13 @@ func handleError(err error) {
 		fmt.Println(err)
 		args.Usage()
 	}
+}
+
+func errBadCommand(errmsg string) error {
+	return fmt.Errorf(
+		"%s\n\n"+
+			"usage: %s <command>\n"+
+			"       where <command> is one of\n"+
+			"       install, remove, debug, start, stop, pause or continue.\n",
+		errmsg, os.Args[0])
 }

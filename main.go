@@ -3,7 +3,7 @@ package main
 import (
 	"OneCIBasesCreator/OneCIBasesCreator"
 	"OneCIBasesCreator/args"
-	"log"
+	"fmt"
 )
 
 func main() {
@@ -21,6 +21,7 @@ func main() {
 
 func handleError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Error: " + err.Error())
+		args.Usage()
 	}
 }
