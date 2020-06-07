@@ -10,12 +10,12 @@ import (
 )
 
 type DB struct {
-	ID string
-	Server string
-	Ref string
+	ID          string
+	Server      string
+	Ref         string
 	Description string
-	Name string
-	Folder string
+	Name        string
+	Folder      string
 }
 
 func Create(inPathLst, outPathiBases []string) error {

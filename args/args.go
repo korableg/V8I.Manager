@@ -12,9 +12,9 @@ var (
 	ErrPathLstEmpty    = errors.New("Path to LST not filled in")
 	ErrPathIBasesEmpty = errors.New("Path to iBases not filled in")
 
-	pathLstRaw string
+	pathLstRaw    string
 	pathiBasesRaw string
-	instance     string
+	instance      string
 
 	fs *flag.FlagSet
 )
