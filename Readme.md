@@ -20,10 +20,10 @@
 lst и ibases могут быть перечислены через запятую, для обработки/создания сразу нескольких файлов<br>
 
 Дерево групп информационных баз строится на основании поля "Описание", если данное поле не заполнено, то база укладывается в группу с названием сервера<br>
-![Использование поля описание](https://github.com/korableg/OneCIBasesCreator/blob/master/blob/BaseProperties.png?raw=true)
+![Использование поля описание](https://github.com/korableg/OneCIBasesCreator/blob/master/assets/BaseProperties.png?raw=true)
 
 Тестовый пример в репозитории генерирует такой список:<br>
-![Список баз из тестового примера](https://github.com/korableg/OneCIBasesCreator/blob/master/blob/OneCStarter.png?raw=true)
+![Список баз из тестового примера](https://github.com/korableg/OneCIBasesCreator/blob/master/assets/OneCStarter.png?raw=true)
 
 Релизы подготавливаются традиционно под платформу Win64, если нужно скомпилировать под другие системы, напишите.
 
