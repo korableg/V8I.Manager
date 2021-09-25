@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"time"
 
 	"github.com/korableg/V8I.Manager/pkg/clusterdb"
 	"github.com/korableg/V8I.Manager/pkg/lstparser"
@@ -41,6 +42,8 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 				return nil
 			}
 
+			time.Sleep(time.Millisecond * 1000)
+
 			clusterDBs, err := lstToClusterDbs(w.lsts)
 			if err != nil {
 				return err
@@ -70,15 +73,23 @@ func LstToV8i(lstFileNames []string, v8iFileNames []string) error {
 		return err
 	}
 
-	for _, v8iFilename := range v8iFileNames {
-		err = os.WriteFile(v8iFilename, v8iData, 0644)
-		if err != nil {
-			return err
-		}
+	err = V8IBytesToFiles(v8iData, v8iFileNames)
+	if err != nil {
+		return err
 	}
 
 	return nil
 
+}
+
+func V8IBytesToFiles(v8iBytes []byte, v8iFileNames []string) error {
+	for _, v8iFilename := range v8iFileNames {
+		err := os.WriteFile(v8iFilename, v8iBytes, 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func lstToClusterDbs(lstFilenames []string) ([]*clusterdb.ClusterDB, error) {
