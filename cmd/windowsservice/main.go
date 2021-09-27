@@ -26,6 +26,8 @@ const (
 	_v8iFlag = "v8i"
 )
 
+var Version = "dev"
+
 func main() {
 
 	cobra.OnInitialize(initApp)
@@ -33,7 +35,7 @@ func main() {
 	cmd := &cobra.Command{
 		Use:     filepath.Base(os.Args[0]),
 		Short:   globals.Description,
-		Version: globals.Version,
+		Version: Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if viper.GetBool("isService") {
@@ -86,7 +88,7 @@ func main() {
 		Use:   "version",
 		Short: fmt.Sprintf("print the version number of %s", globals.AppName),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s version %s\n", globals.AppName, globals.Version)
+			fmt.Printf("%s version %s\n", globals.AppName, Version)
 		},
 	})
 
