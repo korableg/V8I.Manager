@@ -15,8 +15,12 @@
 - **--cfg**: Путь к конфигу приложения в формате .yaml [Пример](https://github.com/korableg/V8I.Manager/blob/master/assets/config_example.yaml). Если одновременно указан и конфиг файл и lst и v8i, то в приоритете будут они.
 - **--help**: Вывести в консоль справку
 
+### Описание
 Дерево групп информационных баз строится на основании поля "Описание", если данное поле не заполнено, то база укладывается в группу с названием сервера  
 ![Использование поля описание](https://github.com/korableg/OneCIBasesCreator/blob/master/assets/BaseProperties.png?raw=true)
 
 Тестовый пример в репозитории генерирует такой список:  
 ![Список баз из тестового примера](https://github.com/korableg/OneCIBasesCreator/blob/master/assets/OneCStarter.png?raw=true)
+
+### Пример установки сервиса
+`v8imanager.exe install --cfg C:\Users\User\config.yaml`
