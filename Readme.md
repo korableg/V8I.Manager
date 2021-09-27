@@ -1,6 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/korableg/OneCIBasesCreator)](https://goreportcard.com/report/github.com/korableg/OneCIBasesCreator)
 
-<h3> Мини сервис по созданию файла со списком баз 1С (*v8i) на основании файла с настройками сервера (*lst)</h3>
+## Мини сервис по созданию файла со списком баз 1С (*v8i) на основании файла с настройками сервера (*lst) ##
 
 <b>Параметры приложения:</b><br>
 
