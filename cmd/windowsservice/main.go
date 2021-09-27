@@ -100,8 +100,6 @@ func main() {
 	viper.BindPFlag(_lstFlag, cmd.PersistentFlags().Lookup(_lstFlag))
 	viper.BindPFlag(_v8iFlag, cmd.PersistentFlags().Lookup(_v8iFlag))
 
-	viper.SetDefault(_cfgFlag, "config.yaml")
-
 	err := cmd.Execute()
 	if err != nil {
 		log.Fatal(err)
@@ -119,51 +117,10 @@ func initApp() {
 	viper.Set("isService", isService)
 
 	if isService {
-
-		winloginfo, err := welog.New(globals.AppName, welog.Info, 1)
+		err = initService()
 		if err != nil {
-			log.Fatal(errors.Wrap(err, "windows event log INFO level haven't initialized"))
+			log.Fatal(err)
 		}
-
-		// defer winloginfo.Close()
-
-		winlogwarning, err := welog.New(globals.AppName, welog.Warning, 2)
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "windows event log WARNING level haven't initialized"))
-		}
-
-		// defer winlogwarning.Close()
-
-		winlogerror, err := welog.New(globals.AppName, welog.Error, 3)
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "windows event log ERROR level haven't initialized"))
-		}
-
-		// defer winlogerror.Close()
-
-		log.SetOutput(io.Discard)
-		log.AddHook(&writer.Hook{
-			Writer: winloginfo,
-			LogLevels: []log.Level{
-				log.InfoLevel,
-				log.DebugLevel,
-				log.TraceLevel,
-			},
-		})
-		log.AddHook(&writer.Hook{
-			Writer: winlogwarning,
-			LogLevels: []log.Level{
-				log.WarnLevel,
-			},
-		})
-		log.AddHook(&writer.Hook{
-			Writer: winlogerror,
-			LogLevels: []log.Level{
-				log.ErrorLevel,
-				log.FatalLevel,
-				log.PanicLevel,
-			},
-		})
 	}
 
 	cfgFlagValue := viper.GetString(_cfgFlag)
@@ -171,13 +128,18 @@ func initApp() {
 	v8iFlagValue := viper.GetStringSlice(_v8iFlag)
 
 	if !(len(lstFlagValue) > 0 && len(v8iFlagValue) > 0) {
-		viper.SetConfigFile(cfgFlagValue)
-		if err := viper.ReadInConfig(); err == nil {
-			log.Debugf("config file %s has been read", viper.ConfigFileUsed())
-		} else {
-			log.Error(err)
+
+		if len(cfgFlagValue) == 0 {
 			log.Fatal("should be determine correct path in --cfg flag or --lst and --v8i flags")
 		}
+
+		viper.SetConfigFile(cfgFlagValue)
+		err := viper.ReadInConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Debugf("config file %s has been read", viper.ConfigFileUsed())
 	}
 
 	lstFlagValue = viper.GetStringSlice(_lstFlag)
@@ -210,5 +172,50 @@ func initApp() {
 			}
 		}
 	}
+
+}
+
+func initService() error {
+
+	winloginfo, err := welog.New(globals.AppName, welog.Info, 1)
+	if err != nil {
+		return errors.Wrap(err, "windows event log INFO level haven't initialized")
+	}
+
+	winlogwarning, err := welog.New(globals.AppName, welog.Warning, 2)
+	if err != nil {
+		return errors.Wrap(err, "windows event log WARNING level haven't initialized")
+	}
+
+	winlogerror, err := welog.New(globals.AppName, welog.Error, 3)
+	if err != nil {
+		return errors.Wrap(err, "windows event log ERROR level haven't initialized")
+	}
+
+	log.SetOutput(io.Discard)
+	log.AddHook(&writer.Hook{
+		Writer: winloginfo,
+		LogLevels: []log.Level{
+			log.InfoLevel,
+			log.DebugLevel,
+			log.TraceLevel,
+		},
+	})
+	log.AddHook(&writer.Hook{
+		Writer: winlogwarning,
+		LogLevels: []log.Level{
+			log.WarnLevel,
+		},
+	})
+	log.AddHook(&writer.Hook{
+		Writer: winlogerror,
+		LogLevels: []log.Level{
+			log.ErrorLevel,
+			log.FatalLevel,
+			log.PanicLevel,
+		},
+	})
+
+	return nil
 
 }

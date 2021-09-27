@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -49,7 +50,11 @@ func TestWatch(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	filename := <-cfn
-	assert.Equal(t, pathToNewlst, filename)
+
+	osDeppathToNewlst := filepath.FromSlash(pathToNewlst)
+	osDepFilename := filepath.FromSlash(filename)
+
+	assert.Equal(t, osDeppathToNewlst, osDepFilename)
 
 	cancel()
 

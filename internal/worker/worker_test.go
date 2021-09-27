@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -32,10 +33,11 @@ func TestWorker(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	f, err := os.OpenFile(lsts[0], os.O_APPEND|os.O_WRONLY, 0600)
+	absLstPath, err := filepath.Abs(lsts[0])
 	assert.Equal(t, err, nil)
 
-	defer f.Close()
+	f, err := os.OpenFile(absLstPath, os.O_APPEND|os.O_WRONLY, 0600)
+	assert.Equal(t, err, nil)
 
 	fileinfo, err := f.Stat()
 	assert.Equal(t, err, nil)
@@ -60,6 +62,9 @@ func TestWorker(t *testing.T) {
 
 		}
 
+		err = f.Close()
+		assert.Equal(t, err, nil)
+
 	}()
 
 	for i := 0; i < countOfWrite; i++ {
@@ -82,7 +87,8 @@ func TestWorker(t *testing.T) {
 
 	}
 
-	err = f.Truncate(filesize)
+	err = os.Truncate(absLstPath, filesize)
+
 	assert.Equal(t, err, nil)
 
 }

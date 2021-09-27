@@ -3,6 +3,7 @@ package worker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"time"
 
@@ -28,6 +29,17 @@ func NewWorker(lsts []string) *Worker {
 
 func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) error {
 
+	if len(w.lsts) == 0 {
+		return errors.New("list of lst files is empty")
+	}
+
+	v8iBytes, err := w.buildv8i()
+	if err != nil {
+		return err
+	}
+
+	out <- v8iBytes
+
 	changedChan, errChan := watcher.Watch(ctx, w.lsts...)
 
 	for {
@@ -42,14 +54,9 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 				return nil
 			}
 
-			time.Sleep(time.Millisecond * 1000)
+			time.Sleep(time.Millisecond * 300)
 
-			clusterDBs, err := lstToClusterDbs(w.lsts)
-			if err != nil {
-				return err
-			}
-
-			v8iBytes, err := v8ibuilder.Build(clusterDBs...)
+			v8iBytes, err := w.buildv8i()
 			if err != nil {
 				return err
 			}
@@ -58,6 +65,22 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 		}
 
 	}
+
+}
+
+func (w *Worker) buildv8i() ([]byte, error) {
+
+	clusterDBs, err := lstToClusterDbs(w.lsts)
+	if err != nil {
+		return nil, err
+	}
+
+	v8iBytes, err := v8ibuilder.Build(clusterDBs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return v8iBytes, nil
 
 }
 
