@@ -1,6 +1,12 @@
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
 builds:
   - binary: v8imanager
     main: ./cmd/windowsservice
+    archives:
+
     goarch:
       - amd64
     goos:
