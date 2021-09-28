@@ -1,9 +1,8 @@
-archives:
-  - format_overrides:
-      - goos: windows
-        format: zip
+
 builds:
-  - binary: v8imanager
+  -
+    id: v8imanager
+    binary: v8imanager
     main: ./cmd/windowsservice
     archives:
 
@@ -17,3 +16,13 @@ builds:
       - -w
       - -s
       - -X main.Version={{.Tag}}
+archives:
+  -
+    id: 'v8imanager'
+    builds: ['v8imanager']
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
