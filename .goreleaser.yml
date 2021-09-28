@@ -11,9 +11,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -w
-      - -s
-      - -X main.Version={{.Tag}}
+      - -s -w -X main.Version={{.Tag}}
 archives:
   -
     id: 'v8imanager'
