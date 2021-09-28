@@ -30,22 +30,42 @@ var Version = "dev"
 
 func main() {
 
-	cobra.OnInitialize(initApp)
-
 	cmd := &cobra.Command{
 		Use:     filepath.Base(os.Args[0]),
 		Short:   globals.Description,
 		Version: Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if viper.GetBool("isService") {
+			isService, err := svc.IsWindowsService()
+			if err != nil {
+				return errors.Wrap(err, "couldn't determine that the application is a service")
+			}
+
+			if isService {
+				err = initService()
+				if err != nil {
+					return err
+				}
+			}
+
+			err = prepareConfig()
+			if err != nil {
+				return err
+			}
+
+			err = checkSources()
+			if err != nil {
+				return err
+			}
+
+			if isService {
 				return runService()
 			}
 
 			lst := viper.GetStringSlice(_lstFlag)
 			v8i := viper.GetStringSlice(_v8iFlag)
 
-			err := worker.LstToV8i(lst, v8i)
+			err = worker.LstToV8i(lst, v8i)
 			if err != nil {
 				return err
 			}
@@ -62,12 +82,20 @@ func main() {
 		Use:   "install",
 		Short: fmt.Sprintf("installs %s as a windows service", globals.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := installService()
+
+			err := prepareConfig()
 			if err != nil {
 				return err
 			}
+
+			err = installService()
+			if err != nil {
+				return err
+			}
+
 			log.Info("the service was successfull installed")
 			return nil
+
 		},
 	})
 
@@ -109,71 +137,40 @@ func main() {
 
 }
 
-func initApp() {
+func checkSources() error {
 
-	isService, err := svc.IsWindowsService()
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "couldn't determine that the application is a service"))
-	}
-
-	viper.Set("isService", isService)
-
-	if isService {
-		err = initService()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	cfgFlagValue := viper.GetString(_cfgFlag)
 	lstFlagValue := viper.GetStringSlice(_lstFlag)
 	v8iFlagValue := viper.GetStringSlice(_v8iFlag)
-
-	if !(len(lstFlagValue) > 0 && len(v8iFlagValue) > 0) {
-
-		if len(cfgFlagValue) == 0 {
-			log.Fatal("should be determine correct path in --cfg flag or --lst and --v8i flags")
-		}
-
-		viper.SetConfigFile(cfgFlagValue)
-		err := viper.ReadInConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Debugf("config file %s has been read", viper.ConfigFileUsed())
-	}
-
-	lstFlagValue = viper.GetStringSlice(_lstFlag)
-	v8iFlagValue = viper.GetStringSlice(_v8iFlag)
 
 	for _, fileName := range lstFlagValue {
 		_, err := os.Stat(fileName)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	for _, fileName := range v8iFlagValue {
 		_, err := os.Stat(fileName)
 		if err != nil && !os.IsNotExist(err) {
-			log.Fatal(err)
+			return err
 		}
 		if os.IsNotExist(err) {
 			f, err := os.Create(fileName)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			err = f.Close()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			err = os.Remove(fileName)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
 	}
+
+	return nil
 
 }
 
@@ -217,6 +214,31 @@ func initService() error {
 			log.PanicLevel,
 		},
 	})
+
+	return nil
+
+}
+
+func prepareConfig() error {
+
+	cfgFlagValue := viper.GetString(_cfgFlag)
+	lstFlagValue := viper.GetStringSlice(_lstFlag)
+	v8iFlagValue := viper.GetStringSlice(_v8iFlag)
+
+	if !(len(lstFlagValue) > 0 && len(v8iFlagValue) > 0) {
+
+		if len(cfgFlagValue) == 0 {
+			return errors.New("should be determine correct path in --cfg flag or --lst and --v8i flags")
+		}
+
+		viper.SetConfigFile(cfgFlagValue)
+		err := viper.ReadInConfig()
+		if err != nil {
+			return err
+		}
+
+		log.Debugf("config file %s has been read", viper.ConfigFileUsed())
+	}
 
 	return nil
 
