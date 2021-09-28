@@ -112,14 +112,6 @@ func main() {
 		},
 	})
 
-	cmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: fmt.Sprintf("print the version number of %s", globals.AppName),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s version %s\n", globals.AppName, Version)
-		},
-	})
-
 	cmd.CompletionOptions.DisableDefaultCmd = true
 
 	cmd.PersistentFlags().StringP(_cfgFlag, "c", "", "file with the application's settings")
