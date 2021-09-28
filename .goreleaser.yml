@@ -4,8 +4,6 @@ builds:
     id: v8imanager
     binary: v8imanager
     main: ./cmd/windowsservice
-    archives:
-
     goarch:
       - amd64
     goos:
