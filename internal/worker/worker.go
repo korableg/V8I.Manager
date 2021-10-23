@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/korableg/V8I.Manager/internal/watcher"
 	"github.com/korableg/V8I.Manager/pkg/clusterdb"
 	"github.com/korableg/V8I.Manager/pkg/lstparser"
 	"github.com/korableg/V8I.Manager/pkg/v8i/v8ibuilder"
 	"github.com/korableg/V8I.Manager/pkg/v8i/v8iwriter"
-	"github.com/korableg/V8I.Manager/pkg/watcher"
 	log "github.com/sirupsen/logrus"
 )
 

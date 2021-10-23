@@ -21,7 +21,6 @@ var Version = "dev"
 
 var (
 	_cfgFile string
-	cmd      *cobra.Command
 	cfg      config.Config
 )
 

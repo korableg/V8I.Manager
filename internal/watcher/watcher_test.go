@@ -26,8 +26,6 @@ func TestWatch(t *testing.T) {
 	err = f.Close()
 	assert.Equal(t, err, nil)
 
-	time.Sleep(time.Second)
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 	cfn, errChan := Watch(ctx, pathToNewlst)
@@ -39,8 +37,6 @@ func TestWatch(t *testing.T) {
 
 	go func(ctx context.Context, cfn chan string, errChan chan error) {
 		<-ctx.Done()
-		close(cfn)
-		close(errChan)
 	}(ctx, cfn, errChan)
 
 	readBytes, err := os.ReadFile(pathToLst)
