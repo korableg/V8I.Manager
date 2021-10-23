@@ -1,20 +1,29 @@
 //go:build windows
 
-package main
+package windowsservice
 
 import (
 	"context"
 
-	"github.com/korableg/V8I.Manager/internal/globals"
+	"github.com/korableg/V8I.Manager/internal/config"
 	"github.com/korableg/V8I.Manager/internal/worker"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"golang.org/x/sys/windows/svc"
 )
 
-type service struct{}
+type service struct {
+	cfg config.Config
+}
+
+func New(cfg config.Config) *service {
+
+	s := &service{
+		cfg: cfg,
+	}
+
+	return s
+
+}
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
@@ -24,17 +33,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	v8iChan := make(chan []byte, 1)
 	errChan := make(chan error, 1)
 
-	lst := viper.GetStringSlice(_lstFlag)
-	v8i := viper.GetStringSlice(_v8iFlag)
-
-	workerInstance := worker.NewWorker(lst)
+	workerInstance := worker.NewWorker(s.cfg.Lsts(), s.cfg.V8is())
 
 	go func() {
-		log.Infof("starting watch %s files", lst)
-		err := workerInstance.StartWatchingContext(ctx, v8iChan)
+		log.Infof("starting watch %s files", s.cfg.Lsts())
+		err := workerInstance.StartWatchingContext(ctx)
 		if err != nil {
 			errChan <- err
 		}
@@ -60,40 +65,16 @@ loop:
 		case err, ok := <-errChan:
 			{
 				cancel()
-				if !ok || err == nil {
+				if !ok {
 					log.Error("error channel has been closed or a false positive has occured")
-					return
 				}
 				if err != nil {
 					log.Error(err)
-					return false, 1
 				}
+				return false, 1
 			}
-		case v8iBytes, ok := <-v8iChan:
-			if !ok {
-				cancel()
-				log.Error("v8i channel has been close")
-				return
-			}
-			worker.V8IBytesToFiles(v8iBytes, v8i)
-			log.Infof("saved v8i files into %s", v8i)
 		}
 	}
 	changes <- svc.Status{State: svc.StopPending}
 	return
-}
-
-func runService() error {
-
-	log.Info("starting service")
-
-	err := svc.Run(globals.AppName, &service{})
-	if err != nil {
-		return errors.Wrap(err, "during start service")
-	}
-
-	log.Info("service stopped")
-
-	return nil
-
 }

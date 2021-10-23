@@ -19,10 +19,9 @@
             "program": "${fileDirname}",
             "args": [
                 // "install",
-                "--lst",
-                "../../test/test.lst",
-                // "--v8i",
-                // "../test/ibases.v8i",
+                "remove",
+                "--cfg",
+                "../../assets/config_example.yaml"
             ]
         }
     ]

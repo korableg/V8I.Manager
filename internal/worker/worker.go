@@ -9,25 +9,29 @@ import (
 
 	"github.com/korableg/V8I.Manager/pkg/clusterdb"
 	"github.com/korableg/V8I.Manager/pkg/lstparser"
-	"github.com/korableg/V8I.Manager/pkg/v8ibuilder"
+	"github.com/korableg/V8I.Manager/pkg/v8i/v8ibuilder"
+	"github.com/korableg/V8I.Manager/pkg/v8i/v8iwriter"
 	"github.com/korableg/V8I.Manager/pkg/watcher"
+	log "github.com/sirupsen/logrus"
 )
 
 type Worker struct {
 	lsts []string
+	v8is []v8iwriter.V8IWriter
 }
 
-func NewWorker(lsts []string) *Worker {
+func NewWorker(lsts []string, v8is []v8iwriter.V8IWriter) *Worker {
 
 	w := &Worker{
 		lsts: lsts,
+		v8is: v8is,
 	}
 
 	return w
 
 }
 
-func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) error {
+func (w *Worker) StartWatchingContext(ctx context.Context) error {
 
 	if len(w.lsts) == 0 {
 		return errors.New("list of lst files is empty")
@@ -38,9 +42,14 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 		return err
 	}
 
-	out <- v8iBytes
+	err = w.writev8i(v8iBytes)
+	if err != nil {
+		return err
+	}
 
 	changedChan, errChan := watcher.Watch(ctx, w.lsts...)
+
+	log.Info("start watching lst files")
 
 	for {
 		select {
@@ -48,11 +57,13 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 			return err
 		case <-ctx.Done():
 			return nil
-		case _, ok := <-changedChan:
+		case p, ok := <-changedChan:
 
 			if !ok {
 				return nil
 			}
+
+			log.Infof("the lst file by path %s was written", p)
 
 			time.Sleep(time.Millisecond * 300)
 
@@ -60,8 +71,11 @@ func (w *Worker) StartWatchingContext(ctx context.Context, out chan<- []byte) er
 			if err != nil {
 				return err
 			}
+			err = w.writev8i(v8iBytes)
+			if err != nil {
+				return err
+			}
 
-			out <- v8iBytes
 		}
 
 	}
@@ -84,34 +98,15 @@ func (w *Worker) buildv8i() ([]byte, error) {
 
 }
 
-func LstToV8i(lstFileNames []string, v8iFileNames []string) error {
+func (w *Worker) writev8i(v8iBytes []byte) error {
 
-	clusterDBs, err := lstToClusterDbs(lstFileNames)
-	if err != nil {
-		return err
-	}
-
-	v8iData, err := v8ibuilder.Build(clusterDBs...)
-	if err != nil {
-		return err
-	}
-
-	err = V8IBytesToFiles(v8iData, v8iFileNames)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-func V8IBytesToFiles(v8iBytes []byte, v8iFileNames []string) error {
-	for _, v8iFilename := range v8iFileNames {
-		err := os.WriteFile(v8iFilename, v8iBytes, 0644)
+	for _, v := range w.v8is {
+		_, err := v.Write(v8iBytes)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
