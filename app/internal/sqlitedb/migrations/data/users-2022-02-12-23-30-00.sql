@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO users (id, name, password_hash, role) VALUES (1, 'admin', '', 'admin');
