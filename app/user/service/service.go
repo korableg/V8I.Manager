@@ -1,11 +1,12 @@
-package repository
+package service
 
 import (
 	"context"
+
 	"github.com/korableg/V8I.Manager/app/user"
 )
 
-type Repository interface {
+type Service interface {
 	Add(ctx context.Context, u user.User) (int64, error)
 	Get(ctx context.Context, ID int64) (user.User, error)
 	GetList(ctx context.Context) ([]user.User, error)
