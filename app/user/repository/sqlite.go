@@ -17,9 +17,11 @@ const (
 
 	selectUserByID = selectUser + " WHERE id = ?;"
 
+	selectUserByName = selectUser + " WHERE name = ?;"
+
 	selectUsersList = selectUser + " ORDER BY name;"
 
-	updateUser = "UPDATE users SET name = ?, password_hash = ?, role = ?, token = ? WHERE id = ?;"
+	updateUser = "UPDATE users SET name = ?, role = ?, token = ? WHERE id = ?;"
 
 	deleteUserByID = "DELETE FROM users WHERE id = ?;"
 )
@@ -71,6 +73,21 @@ func (s *sqliteRepository) Get(ctx context.Context, ID int64) (user.User, error)
 	return u, nil
 }
 
+func (s *sqliteRepository) GetByName(ctx context.Context, name string) (user.User, error) {
+	var u user.User
+
+	row := s.db.QueryRowContext(ctx, selectUserByName, name)
+	if err := row.Scan(&u.ID, &u.Name, &u.PasswordHash, &u.Role, &u.Token); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user.User{}, ErrUserNotFound
+		}
+
+		return user.User{}, fmt.Errorf("row scan: %w", err)
+	}
+
+	return u, nil
+}
+
 func (s *sqliteRepository) GetList(ctx context.Context) ([]user.User, error) {
 	users := make([]user.User, 0)
 
@@ -92,7 +109,7 @@ func (s *sqliteRepository) GetList(ctx context.Context) ([]user.User, error) {
 }
 
 func (s *sqliteRepository) Update(ctx context.Context, u user.User) error {
-	if _, err := s.db.ExecContext(ctx, updateUser, u.Name, u.PasswordHash, u.Role, u.Token, u.ID); err != nil {
+	if _, err := s.db.ExecContext(ctx, updateUser, u.Name, u.Role, u.Token, u.ID); err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}
 

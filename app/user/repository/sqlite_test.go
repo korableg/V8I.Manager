@@ -47,12 +47,15 @@ func TestSqliteRepository(t *testing.T) {
 	u.Name = "test222"
 	u.Role = "admin"
 	u.Token = "333"
-	u.PasswordHash = "098765"
 
 	err = r.Update(ctx, u)
 	assert.Nil(t, err)
 
 	u1, err := r.Get(ctx, id)
+	assert.Nil(t, err)
+	assert.EqualValues(t, u, u1)
+
+	u1, err = r.GetByName(ctx, u.Name)
 	assert.Nil(t, err)
 	assert.EqualValues(t, u, u1)
 
