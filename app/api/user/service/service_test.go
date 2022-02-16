@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"github.com/korableg/V8I.Manager/app/api/user"
+	"github.com/korableg/V8I.Manager/app/api/user/repository"
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
-	"github.com/korableg/V8I.Manager/app/user"
-	"github.com/korableg/V8I.Manager/app/user/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"

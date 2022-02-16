@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
+	"github.com/korableg/V8I.Manager/app/api/user"
+	"github.com/korableg/V8I.Manager/app/api/user/repository"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/korableg/V8I.Manager/app/user"
-	"github.com/korableg/V8I.Manager/app/user/repository"
 )
 
 type (

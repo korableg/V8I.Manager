@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/korableg/V8I.Manager/app/api/user"
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
-	"github.com/korableg/V8I.Manager/app/user"
 )
 
 const (

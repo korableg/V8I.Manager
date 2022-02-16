@@ -3,13 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/korableg/V8I.Manager/app/api/user"
+	"github.com/korableg/V8I.Manager/app/api/user/service"
 	"github.com/korableg/V8I.Manager/app/internal/httperror"
-	"github.com/korableg/V8I.Manager/app/user"
-	"github.com/korableg/V8I.Manager/app/user/service"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,22 +42,28 @@ func NewHandlers(params Params) (*Handlers, error) {
 	return h, nil
 }
 
+func (h *Handlers) Register(r *mux.Router) *mux.Router {
+	r.HandleFunc("/add", h.Add).Methods("POST")
+
+	return r
+}
+
 func (h *Handlers) Add(w http.ResponseWriter, r *http.Request) {
 	var req user.AddUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httperror.WriteError(w, r, fmt.Errorf("parse json: %w", err), http.StatusBadRequest)
+		httperror.WriteError(w, r.RequestURI, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := h.validator.Struct(req); err != nil {
-		httperror.WriteError(w, r, fmt.Errorf("validate request: %w", err), http.StatusBadRequest)
+		httperror.WriteError(w, r.RequestURI, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	id, err := h.service.Add(r.Context(), req)
 	if err != nil {
-		httperror.WriteError(w, r, fmt.Errorf("add user: %w", err), http.StatusInternalServerError)
+		httperror.WriteError(w, r.RequestURI, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
