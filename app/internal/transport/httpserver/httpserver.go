@@ -1,6 +1,11 @@
 package httpserver
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -9,10 +14,59 @@ type (
 		Register(r *mux.Router) *mux.Router
 	}
 
-	HttpServer struct {
+	Config struct {
+		Address string `yaml:"address"`
+		Port    int64  `yaml:"port"`
 	}
+
+	HttpServer struct {
+		rootRouter *mux.Router
+		apiRouter  *mux.Router
+		s          *http.Server
+	}
+
+	Option func(server *HttpServer)
 )
 
-func (h *HttpServer) Start() error {
+func WithApiHandlers(r RouteRegister) Option {
+	return func(server *HttpServer) {
+		r.Register(server.apiRouter)
+	}
+}
 
+func NewHttpServer(c Config, opts ...Option) *HttpServer {
+	headers := handlers.AllowedHeaders([]string{"Content-Type"})
+	origins := handlers.AllowedOrigins([]string{fmt.Sprintf("http://localhost:%d", c.Port)})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"})
+
+	rootRouter := mux.NewRouter()
+	rootRouter.Use(handlers.CORS(headers, origins, methods))
+	rootRouter.Use(handlers.RecoveryHandler())
+
+	apiRouter := rootRouter.PathPrefix("/api").Subrouter()
+
+	s := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", c.Address, c.Port),
+		Handler: rootRouter,
+	}
+
+	h := &HttpServer{
+		s:          s,
+		rootRouter: rootRouter,
+		apiRouter:  apiRouter,
+	}
+
+	for _, o := range opts {
+		o(h)
+	}
+
+	return h
+}
+
+func (h *HttpServer) ListenAndServe() error {
+	return h.s.ListenAndServe()
+}
+
+func (h *HttpServer) Shutdown(ctx context.Context) error {
+	return h.s.Shutdown(ctx)
 }

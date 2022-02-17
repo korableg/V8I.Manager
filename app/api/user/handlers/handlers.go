@@ -43,7 +43,8 @@ func NewHandlers(params Params) (*Handlers, error) {
 }
 
 func (h *Handlers) Register(r *mux.Router) *mux.Router {
-	r.HandleFunc("/add", h.Add).Methods("POST")
+	userRouter := r.PathPrefix("/user").Subrouter()
+	userRouter.HandleFunc("", h.Add).Methods("POST")
 
 	return r
 }
