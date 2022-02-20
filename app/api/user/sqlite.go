@@ -1,12 +1,12 @@
-package repository
+package user
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/mattn/go-sqlite3"
 
-	"github.com/korableg/V8I.Manager/app/api/user"
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
 )
 
@@ -26,10 +26,6 @@ const (
 	deleteUserByID = "DELETE FROM users WHERE id = ?;"
 )
 
-var (
-	ErrUserNotFound = errors.New("user not found")
-)
-
 type (
 	sqliteRepository struct {
 		db *sql.DB
@@ -44,9 +40,13 @@ func NewSqliteRepository(sdb *sqlitedb.SqliteDB) (*sqliteRepository, error) {
 	return &sqliteRepository{db: sdb.DB()}, nil
 }
 
-func (s *sqliteRepository) Add(ctx context.Context, u user.User) (int64, error) {
+func (s *sqliteRepository) Add(ctx context.Context, u User) (int64, error) {
 	sqlResult, err := s.db.ExecContext(ctx, insertUser, u.Name, u.PasswordHash, u.Role, u.Token)
 	if err != nil {
+		sqliteErr := sqlite3.Error{}
+		if errors.As(err, &sqliteErr) && sqliteErr.Code == 19 {
+			return 0, ErrUserAlreadyCreated
+		}
 		return 0, fmt.Errorf("inserting user to db: %w", err)
 	}
 
@@ -58,45 +58,45 @@ func (s *sqliteRepository) Add(ctx context.Context, u user.User) (int64, error) 
 	return id, nil
 }
 
-func (s *sqliteRepository) Get(ctx context.Context, ID int64) (user.User, error) {
-	var u user.User
+func (s *sqliteRepository) Get(ctx context.Context, ID int64) (User, error) {
+	var u User
 
 	row := s.db.QueryRowContext(ctx, selectUserByID, ID)
 	if err := row.Scan(&u.ID, &u.Name, &u.PasswordHash, &u.Role, &u.Token); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return user.User{}, ErrUserNotFound
+			return User{}, ErrUserNotFound
 		}
 
-		return user.User{}, fmt.Errorf("row scan: %w", err)
+		return User{}, fmt.Errorf("row scan: %w", err)
 	}
 
 	return u, nil
 }
 
-func (s *sqliteRepository) GetByName(ctx context.Context, name string) (user.User, error) {
-	var u user.User
+func (s *sqliteRepository) GetByName(ctx context.Context, name string) (User, error) {
+	var u User
 
 	row := s.db.QueryRowContext(ctx, selectUserByName, name)
 	if err := row.Scan(&u.ID, &u.Name, &u.PasswordHash, &u.Role, &u.Token); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return user.User{}, ErrUserNotFound
+			return User{}, ErrUserNotFound
 		}
 
-		return user.User{}, fmt.Errorf("row scan: %w", err)
+		return User{}, fmt.Errorf("row scan: %w", err)
 	}
 
 	return u, nil
 }
 
-func (s *sqliteRepository) GetList(ctx context.Context) ([]user.User, error) {
-	users := make([]user.User, 0)
+func (s *sqliteRepository) GetList(ctx context.Context) ([]User, error) {
+	users := make([]User, 0)
 
 	rows, err := s.db.QueryContext(ctx, selectUsersList)
 	if err != nil {
 		return nil, fmt.Errorf("exec query: %w", err)
 	}
 
-	var u user.User
+	var u User
 	for rows.Next() {
 		if err = rows.Scan(&u.ID, &u.Name, &u.PasswordHash, &u.Role, &u.Token); err != nil {
 			return nil, fmt.Errorf("rows scan: %w", err)
@@ -108,7 +108,7 @@ func (s *sqliteRepository) GetList(ctx context.Context) ([]user.User, error) {
 	return users, nil
 }
 
-func (s *sqliteRepository) Update(ctx context.Context, u user.User) error {
+func (s *sqliteRepository) Update(ctx context.Context, u User) error {
 	if _, err := s.db.ExecContext(ctx, updateUser, u.Name, u.Role, u.Token, u.ID); err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}

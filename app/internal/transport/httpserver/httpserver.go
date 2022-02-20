@@ -16,7 +16,7 @@ type (
 
 	Config struct {
 		Address string `yaml:"address"`
-		Port    int64  `yaml:"port"`
+		Port    int    `yaml:"port"`
 	}
 
 	HttpServer struct {
@@ -31,6 +31,18 @@ type (
 func WithApiHandlers(r RouteRegister) Option {
 	return func(server *HttpServer) {
 		r.Register(server.apiRouter)
+	}
+}
+
+func WithApiMiddleware(m mux.MiddlewareFunc) Option {
+	return func(server *HttpServer) {
+		server.apiRouter.Use(m)
+	}
+}
+
+func WithHandlers(r RouteRegister) Option {
+	return func(server *HttpServer) {
+		r.Register(server.rootRouter)
 	}
 }
 

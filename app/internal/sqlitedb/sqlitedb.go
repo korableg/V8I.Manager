@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 
@@ -19,7 +20,7 @@ const (
 var migrationsDir embed.FS
 
 type (
-	SqliteConfig struct {
+	Config struct {
 		Path string `yaml:"path"`
 	}
 
@@ -28,10 +29,14 @@ type (
 	}
 )
 
-func NewSqliteDB(config SqliteConfig) (*SqliteDB, error) {
+func NewSqliteDB(config Config) (*SqliteDB, error) {
 	db, err := sql.Open("sqlite3", config.Path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open db: %w", err)
+	}
+
+	if err = db.Ping(); err != nil {
+		return nil, fmt.Errorf("ping db: %w", err)
 	}
 
 	sdb := &SqliteDB{
@@ -55,12 +60,12 @@ func (s *SqliteDB) DB() *sql.DB {
 
 func (s *SqliteDB) migrate() error {
 	schemas, err := migrationsDir.ReadDir(schemaDir)
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("read embed schema dir: %w", err)
 	}
 
 	datas, err := migrationsDir.ReadDir(dataDir)
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("read embed data dir: %w", err)
 	}
 

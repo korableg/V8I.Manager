@@ -1,20 +1,19 @@
-package service
+package user
 
 import (
 	"context"
-	"github.com/korableg/V8I.Manager/app/api/user"
-	"github.com/korableg/V8I.Manager/app/api/user/repository"
+	"os"
+	"testing"
+
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func TestService(t *testing.T) {
 	var s Service
 
-	sdbcfg := sqlitedb.SqliteConfig{Path: "./db.db"}
+	sdbcfg := sqlitedb.Config{Path: "./db.db"}
 
 	sdb, err := sqlitedb.NewSqliteDB(sdbcfg)
 	require.Nil(t, err)
@@ -26,7 +25,7 @@ func TestService(t *testing.T) {
 		assert.Nil(t, err)
 	}()
 
-	r, err := repository.NewSqliteRepository(sdb)
+	r, err := NewSqliteRepository(sdb)
 	require.Nil(t, err)
 
 	s, err = NewService(r)
@@ -35,7 +34,7 @@ func TestService(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	u := user.AddUserRequest{
+	u := AddUserRequest{
 		Name:     "Test",
 		Password: "111",
 		Role:     "admin",

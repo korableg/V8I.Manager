@@ -1,4 +1,4 @@
-package repository
+package user
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
-	"github.com/korableg/V8I.Manager/app/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +13,7 @@ import (
 func TestSqliteRepository(t *testing.T) {
 	var r Repository
 
-	sdbcfg := sqlitedb.SqliteConfig{Path: "./db.db"}
+	sdbcfg := sqlitedb.Config{Path: "./db.db"}
 
 	sdb, err := sqlitedb.NewSqliteDB(sdbcfg)
 	require.Nil(t, err)
@@ -32,7 +31,7 @@ func TestSqliteRepository(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	u := user.User{
+	u := User{
 		Name:         "testuser2",
 		PasswordHash: "123456",
 		Token:        "555",

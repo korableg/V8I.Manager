@@ -8,7 +8,7 @@ import (
 )
 
 func TestSqliteDB(t *testing.T) {
-	config := SqliteConfig{
+	config := Config{
 		Path: "./db.db",
 	}
 

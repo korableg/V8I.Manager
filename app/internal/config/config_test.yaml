@@ -1,0 +1,7 @@
+sqlite:
+  path: ./db.db
+http:
+  address: localhost
+  port: 8080
+auth:
+  jwt_secret: lenrkaeirhbekjvnaeir
