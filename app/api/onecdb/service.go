@@ -4,10 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
 type (
+	DBCollector interface {
+		Collect(ctx context.Context, db DB) error
+	}
+
 	Service interface {
 		Add(ctx context.Context, reqDB AddDBRequest) (int64, error)
 		Get(ctx context.Context, ID int64) (DB, error)
