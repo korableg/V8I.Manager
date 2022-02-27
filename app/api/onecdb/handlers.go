@@ -1,12 +1,13 @@
-package user
+package onecdb
 
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/korableg/V8I.Manager/app/internal/httplib"
-	"net/http"
 )
 
 type (
@@ -34,21 +35,21 @@ func NewHandlers(svc Service, validate *validator.Validate) (*Handlers, error) {
 }
 
 func (h *Handlers) Register(r *mux.Router) *mux.Router {
-	requestWithUserID := fmt.Sprintf("/{%s:[0-9]+}", httplib.IDRequest)
+	requestWithDBID := fmt.Sprintf("/{%s:[0-9]+}", httplib.IDRequest)
 
-	userRouter := r.PathPrefix("/users").Subrouter()
-	userRouter.HandleFunc("", h.Add).Methods("POST")
-	userRouter.HandleFunc(requestWithUserID, h.Update).Methods("PUT")
-	userRouter.HandleFunc(requestWithUserID, h.Get).Methods("GET")
-	userRouter.HandleFunc("", h.GetList).Methods("GET")
-	userRouter.HandleFunc(requestWithUserID, h.Delete).Methods("DELETE")
+	dbRouter := r.PathPrefix("/dbs").Subrouter()
+	dbRouter.HandleFunc("", h.Add).Methods("POST")
+	dbRouter.HandleFunc(requestWithDBID, h.Update).Methods("PUT")
+	dbRouter.HandleFunc(requestWithDBID, h.Get).Methods("GET")
+	dbRouter.HandleFunc("", h.GetList).Methods("GET")
+	dbRouter.HandleFunc(requestWithDBID, h.Delete).Methods("DELETE")
 
 	return r
 }
 
 func (h *Handlers) Add(w http.ResponseWriter, r *http.Request) {
 	var (
-		req AddUserRequest
+		req AddDBRequest
 		err error
 	)
 
@@ -63,38 +64,38 @@ func (h *Handlers) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httplib.WriteJSONResponse(w, http.StatusCreated, &AddUserResponse{ID: id})
+	httplib.WriteJSONResponse(w, http.StatusCreated, &AddDBResponse{ID: id})
 }
 
 func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
-	userID, err := httplib.IDFromRequest(r)
+	dbID, err := httplib.IDFromRequest(r)
 	if err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	user, err := h.service.Get(r.Context(), userID)
+	db, err := h.service.Get(r.Context(), dbID)
 	if err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	httplib.WriteJSONResponse(w, http.StatusOK, &user)
+	httplib.WriteJSONResponse(w, http.StatusOK, &db)
 }
 
 func (h *Handlers) GetList(w http.ResponseWriter, r *http.Request) {
-	user, err := h.service.GetList(r.Context())
+	dbs, err := h.service.GetList(r.Context())
 	if err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	httplib.WriteJSONResponse(w, http.StatusOK, &user)
+	httplib.WriteJSONResponse(w, http.StatusOK, &dbs)
 }
 
 func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 	var (
-		req UpdateUserRequest
+		req UpdateDBRequest
 		err error
 	)
 
@@ -103,13 +104,13 @@ func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := httplib.IDFromRequest(r)
+	dbID, err := httplib.IDFromRequest(r)
 	if err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	req.ID = userID
+	req.ID = dbID
 
 	if err = h.service.Update(r.Context(), req); err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusInternalServerError)
@@ -120,13 +121,13 @@ func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
-	userID, err := httplib.IDFromRequest(r)
+	dbID, err := httplib.IDFromRequest(r)
 	if err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err = h.service.Delete(r.Context(), userID); err != nil {
+	if err = h.service.Delete(r.Context(), dbID); err != nil {
 		httplib.WriteError(w, r.RequestURI, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/korableg/V8I.Manager/app/api/onecdb"
 	"github.com/korableg/V8I.Manager/app/api/user"
 	"github.com/korableg/V8I.Manager/app/api/user/auth"
 	"github.com/korableg/V8I.Manager/app/internal/config"
@@ -50,10 +50,16 @@ func NewEngine(cfgPath string) (*Engine, error) {
 		return nil, fmt.Errorf("auth handlers: %w", err)
 	}
 
+	dbHds, err := initDBHandlers(sdb, validate)
+	if err != nil {
+		return nil, fmt.Errorf("onecdb handlers: %w", err)
+	}
+
 	httpSrvr := httpserver.NewHttpServer(
 		cfg.Http,
 		httpserver.WithApiMiddleware(authHds.Middleware()),
 		httpserver.WithApiHandlers(userHds),
+		httpserver.WithApiHandlers(dbHds),
 		httpserver.WithHandlers(authHds),
 	)
 
@@ -114,4 +120,23 @@ func initAuthHandlers(userRepo user.Repository, authCfg auth.Config, validate *v
 	}
 
 	return authHds, nil
+}
+
+func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, error) {
+	dbRepo, err := onecdb.NewSqliteRepository(sdb)
+	if err != nil {
+		return nil, fmt.Errorf("init onecdb repository: %w", err)
+	}
+
+	dbService, err := onecdb.NewService(dbRepo)
+	if err != nil {
+		return nil, fmt.Errorf("init onecdb service: %w", err)
+	}
+
+	dbHandlers, err := onecdb.NewHandlers(dbService, validate)
+	if err != nil {
+		return nil, fmt.Errorf("init onecdb handlers: %w", err)
+	}
+
+	return dbHandlers, nil
 }

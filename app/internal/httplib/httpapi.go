@@ -3,14 +3,20 @@ package httplib
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
 )
 
 //go:generate easyjson
+
+const (
+	IDRequest = "id"
+)
 
 type (
 	//easyjson:json
@@ -59,6 +65,15 @@ func UnmarshalAndValidate(out interface{}, r io.Reader, validate *validator.Vali
 	}
 
 	return nil
+}
+
+func IDFromRequest(r *http.Request) (userID int64, err error) {
+	id := mux.Vars(r)[IDRequest]
+	if userID, err = strconv.ParseInt(id, 10, 64); err != nil {
+		return 0, fmt.Errorf("parse id: %w", err)
+	}
+
+	return userID, nil
 }
 
 func setContentTypeApplicationJson(w http.ResponseWriter) {

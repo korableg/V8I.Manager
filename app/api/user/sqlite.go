@@ -44,7 +44,7 @@ func (s *sqliteRepository) Add(ctx context.Context, u User) (int64, error) {
 	sqlResult, err := s.db.ExecContext(ctx, insertUser, u.Name, u.PasswordHash, u.Role, u.Token)
 	if err != nil {
 		sqliteErr := sqlite3.Error{}
-		if errors.As(err, &sqliteErr) && sqliteErr.Code == 19 {
+		if ok := errors.As(err, &sqliteErr); ok && sqliteErr.Code == 19 {
 			return 0, ErrUserAlreadyCreated
 		}
 		return 0, fmt.Errorf("inserting user to db: %w", err)
