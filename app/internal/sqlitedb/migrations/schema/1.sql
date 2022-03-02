@@ -20,3 +20,11 @@ CREATE TABLE IF NOT EXISTS onecdbs (
     version TEXT DEFAULT '' NOT NULL,
     additional_parameters TEXT DEFAULT '' NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS onecservers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT DEFAULT '' NOT NULL,
+    lst_path TEXT NOT NULL,
+    lst_hash TEXT NOT NULL,
+    watch INTEGER DEFAULT 0 NOT NULL
+);
