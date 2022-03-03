@@ -19,7 +19,7 @@ const (
 
 	updateServer = "UPDATE onecservers SET name = ?, lst_path = ? WHERE id = ?;"
 
-	switchWatching = "UPDATE onecservers SET watch = IIF(watch = 1, 0, 1) WHERE id = ?;"
+	updateWatch = "UPDATE onecservers SET watch = ? WHERE id = ?;"
 
 	updateHash = "UPDATE onecservers SET lst_hash = ? WHERE id = ?;"
 
@@ -97,8 +97,8 @@ func (s *sqliteRepository) Update(ctx context.Context, server Server) error {
 	return nil
 }
 
-func (s *sqliteRepository) SwitchWatching(ctx context.Context, ID int64) error {
-	if _, err := s.db.ExecContext(ctx, switchWatching, ID); err != nil {
+func (s *sqliteRepository) UpdateWatch(ctx context.Context, ID int64, watch bool) error {
+	if _, err := s.db.ExecContext(ctx, updateWatch, watch, ID); err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}
 

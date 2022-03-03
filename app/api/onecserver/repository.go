@@ -9,7 +9,7 @@ type (
 		GetList(ctx context.Context) ([]Server, error)
 		Update(ctx context.Context, u Server) error
 		UpdateHash(ctx context.Context, ID int64, hash string) error
-		SwitchWatching(ctx context.Context, ID int64) error
+		UpdateWatch(ctx context.Context, ID int64, watch bool) error
 		Delete(ctx context.Context, ID int64) error
 	}
 )
