@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/korableg/V8I.Manager/app/api/onecdb"
+	"github.com/korableg/V8I.Manager/app/api/onecserver/dbbuilder"
+	"github.com/korableg/V8I.Manager/app/api/onecserver/watcher"
+	"github.com/sirupsen/logrus"
 	"io"
 	"sync"
 )
@@ -15,14 +18,16 @@ type (
 		Get(ctx context.Context, ID int64) (Server, error)
 		GetList(ctx context.Context) ([]Server, error)
 		Update(ctx context.Context, u UpdateServerRequest) error
-		SwitchWatching(ctx context.Context, ID int64) error
+		SwitchWatching(ctx context.Context, ID int64) (bool, error)
 		Delete(ctx context.Context, ID int64) error
 		io.Closer
 	}
 
 	service struct {
-		serviceRepo Repository
-		dbCollector onecdb.DBCollector
+		serviceRepo   Repository
+		dbCollector   onecdb.DBCollector
+		watcherFabric watcher.Fabric
+		builder       dbbuilder.DBBuilder
 
 		mu         sync.Mutex
 		watching   map[int64]chan<- struct{}
@@ -30,7 +35,7 @@ type (
 	}
 )
 
-func NewService(serviceRepo Repository, collector onecdb.DBCollector) (*service, error) {
+func NewService(serviceRepo Repository, collector onecdb.DBCollector, watcherFabric watcher.Fabric, builder dbbuilder.DBBuilder) (*service, error) {
 	if serviceRepo == nil {
 		return nil, errors.New("service repository is not defined")
 	}
@@ -39,14 +44,24 @@ func NewService(serviceRepo Repository, collector onecdb.DBCollector) (*service,
 		return nil, errors.New("db collector is not defined")
 	}
 
+	if watcherFabric == nil {
+		return nil, errors.New("watcher fabric is not defined")
+	}
+
+	if builder == nil {
+		return nil, errors.New("db builder is not defined")
+	}
+
 	s := &service{
-		serviceRepo: serviceRepo,
-		dbCollector: collector,
-		watching:    make(map[int64]chan<- struct{}, 0),
+		serviceRepo:   serviceRepo,
+		dbCollector:   collector,
+		watcherFabric: watcherFabric,
+		builder:       builder,
+		watching:      make(map[int64]chan<- struct{}, 0),
 	}
 
 	if err := s.startWatchingAllServers(); err != nil {
-		return nil, errors.New("db collector is not defined")
+		return nil, errors.New("start watching all servers")
 	}
 
 	return s, nil
@@ -106,7 +121,7 @@ func (s *service) Update(ctx context.Context, req UpdateServerRequest) error {
 	return nil
 }
 
-func (s *service) SwitchWatching(ctx context.Context, ID int64) (err error) {
+func (s *service) SwitchWatching(ctx context.Context, ID int64) (watching bool, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -115,18 +130,18 @@ func (s *service) SwitchWatching(ctx context.Context, ID int64) (err error) {
 		close(stopCh)
 		delete(s.watching, ID)
 	} else {
-		stopCh, err = s.startWatching(ID)
+		stopCh, err = s.startWatching(ctx, ID)
 		if err != nil {
-			return fmt.Errorf("switch watching: %w", err)
+			return false, fmt.Errorf("switch watching: %w", err)
 		}
 		s.watching[ID] = stopCh
 	}
 
 	if err = s.serviceRepo.UpdateWatch(ctx, ID, !ok); err != nil {
-		return fmt.Errorf("update watching in storage: %w", err)
+		logrus.Errorf("update watch in repository: %s", err.Error())
 	}
 
-	return nil
+	return !ok, nil
 }
 
 func (s *service) Delete(ctx context.Context, ID int64) error {
@@ -157,12 +172,64 @@ func (s *service) Close() error {
 	return nil
 }
 
-func (s *service) startWatching(id int64) (chan<- struct{}, error) {
-	ch := make(chan struct{}, 1)
+func (s *service) startWatching(ctx context.Context, id int64) (chan<- struct{}, error) {
+	server, err := s.serviceRepo.Get(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("get server from repository: %w", err)
+	}
 
-	return ch, nil
+	return s.startWatchingServer(server)
 }
 
 func (s *service) startWatchingAllServers() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	servers, err := s.serviceRepo.GetList(context.Background())
+	if err != nil {
+		return fmt.Errorf("get servers from repository: %w", err)
+	}
+
+	for _, server := range servers {
+		if !server.Watch {
+			continue
+		}
+
+		stopCh, err := s.startWatchingServer(server)
+		if err != nil {
+			return fmt.Errorf("start watching server: %w", err)
+		}
+
+		s.watching[server.ID] = stopCh
+	}
+
 	return nil
+}
+
+func (s *service) startWatchingServer(server Server) (chan<- struct{}, error) {
+	stopCh := make(chan struct{}, 1)
+
+	w, err := s.watcherFabric(server.LSTPath, stopCh)
+	if err != nil {
+		return nil, fmt.Errorf("init watcher: %w", err)
+	}
+
+	s.watchingWg.Add(1)
+	go func() {
+		defer s.watchingWg.Done()
+
+		for range w.Start() {
+			dbs, err := s.builder.Build(server.LSTPath)
+			if err != nil {
+				logrus.Errorf("build list of db: %s", err.Error())
+				continue
+			}
+			if err = s.dbCollector.Collect(dbs...); err != nil {
+				logrus.Errorf("collect db: %s", err.Error())
+				continue
+			}
+		}
+	}()
+
+	return stopCh, err
 }

@@ -10,7 +10,7 @@ import (
 
 type (
 	DBCollector interface {
-		Collect(ctx context.Context, db DB) error
+		Collect(db ...DB) error
 	}
 
 	Service interface {
