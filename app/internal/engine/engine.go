@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/korableg/V8I.Manager/app/api/onecserver"
+	"github.com/korableg/V8I.Manager/app/api/onecserver/dbbuilder"
+	"github.com/korableg/V8I.Manager/app/api/onecserver/watcher"
+	"github.com/korableg/V8I.Manager/app/api/webinfobase"
+	"github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -23,6 +28,9 @@ type (
 )
 
 func NewEngine(cfgPath string) (*Engine, error) {
+
+	logrus.Info("starting engine")
+
 	cfg, err := config.NewConfig(cfgPath)
 	if err != nil {
 		return nil, fmt.Errorf("init config: %w", err)
@@ -50,17 +58,26 @@ func NewEngine(cfgPath string) (*Engine, error) {
 		return nil, fmt.Errorf("auth handlers: %w", err)
 	}
 
-	dbHds, err := initDBHandlers(sdb, validate)
+	dbHds, dbCollector, err := initDBHandlers(sdb, validate)
 	if err != nil {
 		return nil, fmt.Errorf("onecdb handlers: %w", err)
 	}
+
+	onecServersHds, err := initOnecServerHandlers(sdb, dbCollector, validate)
+	if err != nil {
+		return nil, fmt.Errorf("onec servers handlers: %w", err)
+	}
+
+	webCommonInfoBasesHds, err := initWebCommonInfoBasesHandlers(validate)
 
 	httpSrvr := httpserver.NewHttpServer(
 		cfg.Http,
 		httpserver.WithApiMiddleware(authHds.Middleware()),
 		httpserver.WithApiHandlers(userHds),
 		httpserver.WithApiHandlers(dbHds),
+		httpserver.WithApiHandlers(onecServersHds),
 		httpserver.WithHandlers(authHds),
+		httpserver.WithHandlers(webCommonInfoBasesHds),
 	)
 
 	return &Engine{
@@ -70,6 +87,8 @@ func NewEngine(cfgPath string) (*Engine, error) {
 }
 
 func (en *Engine) Start() error {
+	logrus.Infof("starting http server: %s", en.httpSrvr.Address())
+
 	if err := en.httpSrvr.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("listen and serve http: %w", err)
 	}
@@ -78,6 +97,8 @@ func (en *Engine) Start() error {
 }
 
 func (en *Engine) Shutdown(ctx context.Context) error {
+	logrus.Infof("shutdown engine")
+
 	if err := en.httpSrvr.Shutdown(ctx); err != nil {
 		return fmt.Errorf("shutdown http server: %w", err)
 	}
@@ -122,21 +143,54 @@ func initAuthHandlers(userRepo user.Repository, authCfg auth.Config, validate *v
 	return authHds, nil
 }
 
-func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, error) {
+func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, onecdb.DBCollector, error) {
 	dbRepo, err := onecdb.NewSqliteRepository(sdb)
 	if err != nil {
-		return nil, fmt.Errorf("init onecdb repository: %w", err)
+		return nil, nil, fmt.Errorf("init onecdb repository: %w", err)
 	}
 
 	dbService, err := onecdb.NewService(dbRepo)
 	if err != nil {
-		return nil, fmt.Errorf("init onecdb service: %w", err)
+		return nil, nil, fmt.Errorf("init onecdb service: %w", err)
 	}
 
 	dbHandlers, err := onecdb.NewHandlers(dbService, validate)
 	if err != nil {
-		return nil, fmt.Errorf("init onecdb handlers: %w", err)
+		return nil, nil, fmt.Errorf("init onecdb handlers: %w", err)
 	}
 
-	return dbHandlers, nil
+	return dbHandlers, dbService, nil
+}
+
+func initOnecServerHandlers(sdb *sqlitedb.SqliteDB, collector onecdb.DBCollector, validate *validator.Validate) (*onecserver.Handlers, error) {
+	onecRepo, err := onecserver.NewSqliteRepository(sdb)
+	if err != nil {
+		return nil, fmt.Errorf("init onec server repository: %w", err)
+	}
+
+	builder, err := dbbuilder.NewBuilder()
+	if err != nil {
+		return nil, fmt.Errorf("init onec server db builder: %w", err)
+	}
+
+	onecService, err := onecserver.NewService(onecRepo, collector, watcher.NewWatcher, builder)
+	if err != nil {
+		return nil, fmt.Errorf("init onec server service: %w", err)
+	}
+
+	onecHandlers, err := onecserver.NewHandlers(onecService, validate)
+	if err != nil {
+		return nil, fmt.Errorf("init onec server handlers: %w", err)
+	}
+
+	return onecHandlers, nil
+}
+
+func initWebCommonInfoBasesHandlers(validate *validator.Validate) (*webinfobase.Handlers, error) {
+	webCommonInfoBasesHds, err := webinfobase.NewHandlers(validate)
+	if err != nil {
+		return nil, fmt.Errorf("init WebCommonInfoBasesHandlers: %w", err)
+	}
+
+	return webCommonInfoBasesHds, nil
 }

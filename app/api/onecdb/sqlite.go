@@ -56,7 +56,7 @@ func NewSqliteRepository(sdb *sqlitedb.SqliteDB) (*sqliteRepository, error) {
 func (s sqliteRepository) Add(ctx context.Context, db DB) (int64, error) {
 	sqlResult, err := s.db.ExecContext(
 		ctx, insertDB,
-		db.UUID, db.Name, db.Connect, db.OrderInList,
+		db.UUID.String(), db.Name, db.Connect, db.OrderInList,
 		db.OrderInTree, db.Folder, db.ClientConnectionSpeed, db.App,
 		db.WA, db.Version, db.AdditionalParameters)
 	if err != nil {

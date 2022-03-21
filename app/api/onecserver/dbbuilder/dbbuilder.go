@@ -50,10 +50,13 @@ func (b *Builder) Build(path string) ([]onecdb.DB, error) {
 		server, ref := parseConnection(tokenPart[8])
 
 		db := onecdb.DB{
-			UUID:    uid,
-			Name:    ref,
-			Connect: fmt.Sprintf(`Srvr="%s";Ref="%s"`, server, ref),
-			Folder:  server,
+			UUID:                  uid,
+			Name:                  ref,
+			Connect:               fmt.Sprintf(`Srvr="%s";Ref="%s"`, server, ref),
+			Folder:                server,
+			ClientConnectionSpeed: onecdb.ClientConnectionSpeedNormal,
+			WA:                    onecdb.WAEnabled,
+			App:                   onecdb.AppAuto,
 		}
 
 		dbs = append(dbs, db)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
 )
 
@@ -90,7 +91,7 @@ func (s *sqliteRepository) GetList(ctx context.Context) ([]Server, error) {
 }
 
 func (s *sqliteRepository) Update(ctx context.Context, server Server) error {
-	if _, err := s.db.ExecContext(ctx, updateServer, server.Name, server.LSTPath); err != nil {
+	if _, err := s.db.ExecContext(ctx, updateServer, server.Name, server.LSTPath, server.ID); err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}
 

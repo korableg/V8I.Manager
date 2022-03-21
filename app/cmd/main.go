@@ -46,7 +46,7 @@ func rootCmd(cmd *cobra.Command, args []string) error {
 	errChan := make(chan error, 1)
 
 	go func() {
-		if err := en.Start(); err != nil {
+		if err = en.Start(); err != nil {
 			errChan <- err
 		}
 	}()
@@ -56,10 +56,17 @@ func rootCmd(cmd *cobra.Command, args []string) error {
 
 	select {
 	case <-sig:
+
 		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
-		return en.Shutdown(ctx)
+		if err = en.Shutdown(ctx); err != nil {
+			return err
+		}
+
+		logrus.Info("application gracefully shutdown")
+
+		return nil
 	case err, ok := <-errChan:
 		if !ok {
 			return errors.New("error chan was closed")

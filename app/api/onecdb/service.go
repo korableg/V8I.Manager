@@ -119,3 +119,15 @@ func (s *service) Delete(ctx context.Context, ID int64) error {
 
 	return nil
 }
+
+func (s *service) Collect(dbs ...DB) error {
+	ctx := context.Background()
+
+	for _, db := range dbs {
+		if _, err := s.dbRepo.Add(ctx, db); err != nil {
+			return fmt.Errorf("add to store: %w", err)
+		}
+	}
+
+	return nil
+}

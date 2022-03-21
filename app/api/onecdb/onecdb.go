@@ -4,6 +4,19 @@ package onecdb
 
 import "github.com/google/uuid"
 
+const (
+	ClientConnectionSpeedNormal = "normal"
+	ClientConnectionSpeedLow    = "low"
+
+	AppAuto        = "Auto"
+	AppThinClient  = "ThinClient"
+	AppThickClient = "ThickClient"
+	AppWebClient   = "WebClient"
+
+	WAEnabled  = 1
+	WADisabled = 0
+)
+
 type (
 	// DB Description of v8i file: https://its.1c.ru/db/v838doc#bookmark:adm:TI000000368
 	//easyjson:json

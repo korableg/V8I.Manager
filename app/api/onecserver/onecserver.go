@@ -25,6 +25,16 @@ type (
 		Name    string `json:"name" validate:"required"`
 		LSTPath string `json:"lst_path" validate:"required,file"`
 	}
+
+	//easyjson:json
+	AddServerResponse struct {
+		ID int64 `json:"id"`
+	}
+
+	//easyjson:json
+	SwitchWatchingResponse struct {
+		Watching bool `json:"watching"`
+	}
 )
 
 var (

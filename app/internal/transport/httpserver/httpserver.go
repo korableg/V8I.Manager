@@ -54,6 +54,7 @@ func NewHttpServer(c Config, opts ...Option) *HttpServer {
 	rootRouter := mux.NewRouter()
 	rootRouter.Use(handlers.CORS(headers, origins, methods))
 	rootRouter.Use(handlers.RecoveryHandler())
+	rootRouter.NotFoundHandler = http.NotFoundHandler()
 
 	apiRouter := rootRouter.PathPrefix("/api").Subrouter()
 
@@ -73,6 +74,10 @@ func NewHttpServer(c Config, opts ...Option) *HttpServer {
 	}
 
 	return h
+}
+
+func (h *HttpServer) Address() string {
+	return h.s.Addr
 }
 
 func (h *HttpServer) ListenAndServe() error {
