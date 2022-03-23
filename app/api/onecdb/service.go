@@ -105,7 +105,7 @@ func (s *service) Update(ctx context.Context, reqDB UpdateDBRequest) error {
 		AdditionalParameters:  reqDB.AdditionalParameters,
 	}
 
-	if err := s.dbRepo.Update(ctx, db); err != nil {
+	if err = s.dbRepo.Update(ctx, db); err != nil {
 		return fmt.Errorf("update db in store: %w", err)
 	}
 

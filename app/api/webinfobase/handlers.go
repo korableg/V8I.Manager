@@ -12,10 +12,15 @@ import (
 type (
 	Handlers struct {
 		validate *validator.Validate
+		service  Service
 	}
 )
 
-func NewHandlers(validate *validator.Validate) (*Handlers, error) {
+func NewHandlers(service Service, validate *validator.Validate) (*Handlers, error) {
+	if service == nil {
+		return nil, errors.New("service is nil")
+	}
+
 	if validate == nil {
 		return nil, errors.New("validator is nil")
 	}
@@ -26,20 +31,23 @@ func NewHandlers(validate *validator.Validate) (*Handlers, error) {
 }
 
 func (h *Handlers) Register(r *mux.Router) *mux.Router {
-	r.HandleFunc("/WebCommonInfoBases", h.WebCommonInfoBasesHead).Methods("HEAD")
-	r.HandleFunc("/WebCommonInfoBases", h.WebCommonInfoBasesGet).Queries("wsdl", "").Methods("GET")
-	r.HandleFunc("/WebCommonInfoBases/ws.cws", h.WebCommonInfoBasesPost).Methods("POST")
+	infoBasesRouter := r.PathPrefix("/WebCommonInfoBases").Subrouter()
+
+	infoBasesRouter.HandleFunc("", h.Head).Methods("HEAD")
+	infoBasesRouter.HandleFunc("", h.GetWSDL).Queries("wsdl", "").Methods("GET")
+	infoBasesRouter.HandleFunc("", h.WebCommonInfoBasesPost).Methods("POST")
+	infoBasesRouter.HandleFunc("/ws.cws", h.WebCommonInfoBasesPost).Methods("POST")
 
 	return r
 }
 
-func (h *Handlers) WebCommonInfoBasesHead(w http.ResponseWriter, _ *http.Request) {
+func (h *Handlers) Head(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
-func (h *Handlers) WebCommonInfoBasesGet(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) GetWSDL(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write(getWSDL())
+	w.Write(h.service.WSDL())
 }
 
 func (h *Handlers) WebCommonInfoBasesPost(w http.ResponseWriter, r *http.Request) {
@@ -50,170 +58,18 @@ func (h *Handlers) WebCommonInfoBasesPost(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = data
-}
 
-func getWSDL() []byte {
-	return []byte(`<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
-		xmlns:soap12bind="http://schemas.xmlsoap.org/wsdl/soap12/"
-		xmlns:soapbind="http://schemas.xmlsoap.org/wsdl/soap/"
-		xmlns:tns="https://titovcode.com/WebCommonInfoBases"
-		xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"
-		xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
-		xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-		xmlns:xsd1="https://titovcode.com/WebCommonInfoBases"
-		name="WebCommonInfoBases"
-		targetNamespace="https://titovcode.com/WebCommonInfoBases">
-	<types>
-		<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-				xmlns:xs1="https://titovcode.com/WebCommonInfoBases"
-				targetNamespace="https://titovcode.com/WebCommonInfoBases"
-				elementFormDefault="qualified">
-			<xs:element name="CheckInfoBases">
-				<xs:complexType>
-					<xs:sequence>
-						<xs:element name="ID"
-								type="xs:string"
-								nillable="true"/>
-						<xs:element name="Code"
-								type="xs:string"
-								nillable="true"/>
-					</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			<xs:element name="CheckInfoBasesResponse">
-				<xs:complexType>
-					<xs:sequence>
-						<xs:element name="return"
-								type="xs:string"
-								nillable="true"/>
-						<xs:element name="Changed"
-								type="xs:boolean"
-								nillable="true"/>
-						<xs:element name="URL"
-								type="xs:string"
-								nillable="true"/>
-					</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			<xs:element name="GetInfoBases">
-				<xs:complexType>
-					<xs:sequence>
-						<xs:element name="ID"
-								type="xs:string"
-								nillable="true"/>
-					</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			<xs:element name="GetInfoBasesResponse">
-				<xs:complexType>
-					<xs:sequence>
-						<xs:element name="return"
-								type="xs:string"
-								nillable="true"/>
-						<xs:element name="ID"
-								type="xs:string"
-								nillable="true"/>
-						<xs:element name="Code"
-								type="xs:string"
-								nillable="true"/>
-						<xs:element name="Text"
-								type="xs:string"
-								nillable="true"/>
-					</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-		</xs:schema>
-	</types>
-	<message name="CheckInfoBasesRequestMessage">
-		<part name="parameters"
-				element="tns:CheckInfoBases"/>
-	</message>
-	<message name="CheckInfoBasesResponseMessage">
-		<part name="parameters"
-				element="tns:CheckInfoBasesResponse"/>
-	</message>
-	<message name="GetInfoBasesRequestMessage">
-		<part name="parameters"
-				element="tns:GetInfoBases"/>
-	</message>
-	<message name="GetInfoBasesResponseMessage">
-		<part name="parameters"
-				element="tns:GetInfoBasesResponse"/>
-	</message>
-	<portType name="WebCommonInfoBasesPortType">
-		<operation name="CheckInfoBases">
-			<input message="tns:CheckInfoBasesRequestMessage"/>
-			<output message="tns:CheckInfoBasesResponseMessage"/>
-		</operation>
-		<operation name="GetInfoBases">
-			<input message="tns:GetInfoBasesRequestMessage"/>
-			<output message="tns:GetInfoBasesResponseMessage"/>
-		</operation>
-	</portType>
-	<binding name="WebCommonInfoBasesSoapBinding"
-			type="tns:WebCommonInfoBasesPortType">
-		<soapbind:binding style="document"
-				transport="http://schemas.xmlsoap.org/soap/http"/>
-		<operation name="CheckInfoBases">
-			<soapbind:operation style="document"
-					soapAction="https://titovcode.com/WebCommonInfoBases#WebCommonInfoBases:CheckInfoBases"/>
-			<input>
-				<soapbind:body use="literal"/>
-			</input>
-			<output>
-				<soapbind:body use="literal"/>
-			</output>
-		</operation>
-		<operation name="GetInfoBases">
-			<soapbind:operation style="document"
-					soapAction="https://titovcode.com/WebCommonInfoBases#WebCommonInfoBases:GetInfoBases"/>
-			<input>
-				<soapbind:body use="literal"/>
-			</input>
-			<output>
-				<soapbind:body use="literal"/>
-			</output>
-		</operation>
-	</binding>
-	<binding name="WebCommonInfoBasesSoap12Binding"
-			type="tns:WebCommonInfoBasesPortType">
-		<soap12bind:binding style="document"
-				transport="http://schemas.xmlsoap.org/soap/http"/>
-		<operation name="CheckInfoBases">
-			<soap12bind:operation style="document"
-					soapAction="https://titovcode.com/WebCommonInfoBases#WebCommonInfoBases:CheckInfoBases"/>
-			<input>
-				<soap12bind:body use="literal"/>
-			</input>
-			<output>
-				<soap12bind:body use="literal"/>
-			</output>
-		</operation>
-		<operation name="GetInfoBases">
-			<soap12bind:operation style="document"
-					soapAction="https://titovcode.com/WebCommonInfoBases#WebCommonInfoBases:GetInfoBases"/>
-			<input>
-				<soap12bind:body use="literal"/>
-			</input>
-			<output>
-				<soap12bind:body use="literal"/>
-			</output>
-		</operation>
-	</binding>
-	<service name="WebCommonInfoBases">
-		<port name="WebCommonInfoBasesSoap"
-				binding="tns:WebCommonInfoBasesSoapBinding">
-			<documentation> 
-				<wsi:Claim xmlns:wsi="http://ws-i.org/schemas/conformanceClaim/"
-						conformsTo="http://ws-i.org/profiles/basic/1.1"/>
-			</documentation>
-			<soapbind:address location="http://192.168.2.2:8080/WebCommonInfoBases/ws.cws"/>
-		</port>
-		<port name="WebCommonInfoBasesSoap12"
-				binding="tns:WebCommonInfoBasesSoap12Binding">
-			<soap12bind:address location="http://192.168.2.2:8080/WebCommonInfoBases/ws.cws"/>
-		</port>
-	</service>
-</definitions>`)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <m:CheckInfoBasesResponse xmlns:m="https://titovcode.com/WebCommonInfoBases">
+            <m:return xmlns:xs="http://www.w3.org/2001/XMLSchema"
+					xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+            <m:Changed xmlns:xs="http://www.w3.org/2001/XMLSchema"
+					xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">true</m:Changed>
+            <m:URL xmlns:xs="http://www.w3.org/2001/XMLSchema"
+					xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">/WebCommonInfoBases</m:URL>
+        </m:CheckInfoBasesResponse>
+    </soap:Body>
+</soap:Envelope>`))
 }
