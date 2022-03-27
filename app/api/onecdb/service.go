@@ -13,6 +13,10 @@ type (
 		Collect(db ...DB) error
 	}
 
+	V8IBuilder interface {
+		BuildV8I(ctx context.Context) (string, error)
+	}
+
 	Service interface {
 		Add(ctx context.Context, reqDB AddDBRequest) (int64, error)
 		Get(ctx context.Context, ID int64) (DB, error)
@@ -130,4 +134,8 @@ func (s *service) Collect(dbs ...DB) error {
 	}
 
 	return nil
+}
+
+func (s *service) BuildV8I(ctx context.Context) (string, error) {
+	return "", nil
 }

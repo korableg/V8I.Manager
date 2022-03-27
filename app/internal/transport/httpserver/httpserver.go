@@ -15,8 +15,8 @@ type (
 	}
 
 	Config struct {
-		Address string `yaml:"address"`
-		Port    int    `yaml:"port"`
+		Address string `yaml:"address" validate:"required,ipv4,ne=0.0.0.0"`
+		Port    int    `yaml:"port" validate:"required"`
 	}
 
 	HttpServer struct {
@@ -59,7 +59,7 @@ func NewHttpServer(c Config, opts ...Option) *HttpServer {
 	apiRouter := rootRouter.PathPrefix("/api").Subrouter()
 
 	s := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", c.Address, c.Port),
+		Addr:    fmt.Sprintf(":%d", c.Port),
 		Handler: rootRouter,
 	}
 

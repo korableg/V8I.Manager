@@ -1,0 +1,12 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Body>
+        <m:CheckInfoBasesResponse xmlns:m="https://titovcode.com/WebCommonInfoBases">
+            <m:return xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+            <m:Changed xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">{{ .Changed }}</m:Changed>
+            <m:URL xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">{{ .URL }}</m:URL>
+        </m:CheckInfoBasesResponse>
+    </soap:Body>
+</soap:Envelope>

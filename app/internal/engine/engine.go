@@ -28,15 +28,14 @@ type (
 )
 
 func NewEngine(cfgPath string) (*Engine, error) {
-
 	logrus.Info("starting engine")
 
-	cfg, err := config.NewConfig(cfgPath)
+	validate := validator.New()
+
+	cfg, err := config.NewConfig(cfgPath, validate)
 	if err != nil {
 		return nil, fmt.Errorf("init config: %w", err)
 	}
-
-	validate := validator.New()
 
 	sdb, err := sqlitedb.NewSqliteDB(cfg.Sqlite)
 	if err != nil {
@@ -58,7 +57,7 @@ func NewEngine(cfgPath string) (*Engine, error) {
 		return nil, fmt.Errorf("auth handlers: %w", err)
 	}
 
-	dbHds, dbCollector, err := initDBHandlers(sdb, validate)
+	dbHds, dbCollector, v8ibuilder, err := initDBHandlers(sdb, validate)
 	if err != nil {
 		return nil, fmt.Errorf("onecdb handlers: %w", err)
 	}
@@ -68,7 +67,7 @@ func NewEngine(cfgPath string) (*Engine, error) {
 		return nil, fmt.Errorf("onec servers handlers: %w", err)
 	}
 
-	webCommonInfoBasesHds, err := initWebCommonInfoBasesHandlers(validate)
+	webCommonInfoBasesHds, err := initWebCommonInfoBasesHandlers(cfg, validate, v8ibuilder)
 
 	httpSrvr := httpserver.NewHttpServer(
 		cfg.Http,
@@ -143,23 +142,23 @@ func initAuthHandlers(userRepo user.Repository, authCfg auth.Config, validate *v
 	return authHds, nil
 }
 
-func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, onecdb.DBCollector, error) {
+func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, onecdb.DBCollector, onecdb.V8IBuilder, error) {
 	dbRepo, err := onecdb.NewSqliteRepository(sdb)
 	if err != nil {
-		return nil, nil, fmt.Errorf("init onecdb repository: %w", err)
+		return nil, nil, nil, fmt.Errorf("init onecdb repository: %w", err)
 	}
 
 	dbService, err := onecdb.NewService(dbRepo)
 	if err != nil {
-		return nil, nil, fmt.Errorf("init onecdb service: %w", err)
+		return nil, nil, nil, fmt.Errorf("init onecdb service: %w", err)
 	}
 
 	dbHandlers, err := onecdb.NewHandlers(dbService, validate)
 	if err != nil {
-		return nil, nil, fmt.Errorf("init onecdb handlers: %w", err)
+		return nil, nil, nil, fmt.Errorf("init onecdb handlers: %w", err)
 	}
 
-	return dbHandlers, dbService, nil
+	return dbHandlers, dbService, dbService, nil
 }
 
 func initOnecServerHandlers(sdb *sqlitedb.SqliteDB, collector onecdb.DBCollector, validate *validator.Validate) (*onecserver.Handlers, error) {
@@ -186,10 +185,16 @@ func initOnecServerHandlers(sdb *sqlitedb.SqliteDB, collector onecdb.DBCollector
 	return onecHandlers, nil
 }
 
-func initWebCommonInfoBasesHandlers(validate *validator.Validate) (*webinfobase.Handlers, error) {
-	webCommonInfoBasesHds, err := webinfobase.NewHandlers(validate)
+func initWebCommonInfoBasesHandlers(cfg config.Config, validate *validator.Validate, v8iBuilder onecdb.V8IBuilder) (*webinfobase.Handlers, error) {
+
+	svc, err := webinfobase.NewService(cfg.Http.Address, cfg.Http.Port, v8iBuilder)
 	if err != nil {
-		return nil, fmt.Errorf("init WebCommonInfoBasesHandlers: %w", err)
+		return nil, fmt.Errorf("init webinfobase service: %w", err)
+	}
+
+	webCommonInfoBasesHds, err := webinfobase.NewHandlers(svc, validate)
+	if err != nil {
+		return nil, fmt.Errorf("init webinfobase handlers: %w", err)
 	}
 
 	return webCommonInfoBasesHds, nil

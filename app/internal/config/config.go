@@ -2,23 +2,24 @@ package config
 
 import (
 	"fmt"
-	"github.com/korableg/V8I.Manager/app/api/user/auth"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/korableg/V8I.Manager/app/api/user/auth"
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
 	"github.com/korableg/V8I.Manager/app/internal/transport/httpserver"
 )
 
 type (
 	Config struct {
-		Sqlite sqlitedb.Config   `yaml:"sqlite"`
-		Http   httpserver.Config `yaml:"http"`
-		Auth   auth.Config       `yaml:"auth"`
+		Sqlite sqlitedb.Config   `yaml:"sqlite" validate:"required,dive"`
+		Http   httpserver.Config `yaml:"http" validate:"required,dive"`
+		Auth   auth.Config       `yaml:"auth" validate:"required,dive"`
 	}
 )
 
-func NewConfig(path string) (Config, error) {
+func NewConfig(path string, validate *validator.Validate) (Config, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return Config{}, fmt.Errorf("error config file: %w", err)
@@ -27,6 +28,10 @@ func NewConfig(path string) (Config, error) {
 	c := Config{}
 	if err = yaml.Unmarshal(data, &c); err != nil {
 		return Config{}, fmt.Errorf("unmarshal config: %w", err)
+	}
+
+	if err = validate.Struct(c); err != nil {
+		return Config{}, fmt.Errorf("validate config: %w", err)
 	}
 
 	return c, nil

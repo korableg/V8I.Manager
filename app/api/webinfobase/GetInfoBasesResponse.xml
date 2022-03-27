@@ -1,0 +1,14 @@
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <m:GetInfoBasesResponse xmlns:m="https://titovcode.com/WebCommonInfoBases">
+            <m:return xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+            <m:ID xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">{{ .ClientID }}</m:ID>
+            <m:Code xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+            <m:Text xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">{{ .Text }}</m:Text>
+        </m:GetInfoBasesResponse>
+    </soap:Body>
+</soap:Envelope>

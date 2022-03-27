@@ -2,6 +2,7 @@ package httplib
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
@@ -58,6 +59,18 @@ func WriteError(w http.ResponseWriter, url, err string, statusCode int) {
 func UnmarshalAndValidate(out interface{}, r io.Reader, validate *validator.Validate) (err error) {
 	if err = json.NewDecoder(r).Decode(&out); err != nil {
 		return fmt.Errorf("unmarshal json: %w", err)
+	}
+
+	if err = validate.Struct(out); err != nil {
+		return fmt.Errorf("validate request: %w", err)
+	}
+
+	return nil
+}
+
+func UnmarshalXMLAndValidate(out interface{}, r io.Reader, validate *validator.Validate) (err error) {
+	if err = xml.NewDecoder(r).Decode(&out); err != nil {
+		return fmt.Errorf("unmarshal xml: %w", err)
 	}
 
 	if err = validate.Struct(out); err != nil {
