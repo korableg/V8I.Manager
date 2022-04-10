@@ -8,21 +8,10 @@ import (
 	"github.com/korableg/V8I.Manager/app/api/onecserver/dbbuilder"
 	"github.com/korableg/V8I.Manager/app/api/onecserver/watcher"
 	"github.com/sirupsen/logrus"
-	"io"
 	"sync"
 )
 
 type (
-	Service interface {
-		Add(ctx context.Context, u AddServerRequest) (int64, error)
-		Get(ctx context.Context, ID int64) (Server, error)
-		GetList(ctx context.Context) ([]Server, error)
-		Update(ctx context.Context, u UpdateServerRequest) error
-		SwitchWatching(ctx context.Context, ID int64) (bool, error)
-		Delete(ctx context.Context, ID int64) error
-		io.Closer
-	}
-
 	service struct {
 		serviceRepo   Repository
 		dbCollector   onecdb.DBCollector

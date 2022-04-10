@@ -24,7 +24,7 @@ type (
 	}
 
 	Config struct {
-		Secret string `yaml:"jwt_secret""`
+		Secret string `yaml:"jwt_secret"`
 	}
 
 	Auth interface {

@@ -11,7 +11,7 @@ import (
 
 type (
 	RouteRegister interface {
-		Register(r *mux.Router) *mux.Router
+		Register(r *mux.Router)
 	}
 
 	Config struct {

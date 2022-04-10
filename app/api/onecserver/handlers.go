@@ -34,7 +34,7 @@ func NewHandlers(svc Service, validate *validator.Validate) (*Handlers, error) {
 	return h, nil
 }
 
-func (h *Handlers) Register(r *mux.Router) *mux.Router {
+func (h *Handlers) Register(r *mux.Router) {
 	requestWithServerID := fmt.Sprintf("/{%s:[0-9]+}", httplib.IDRequest)
 
 	serverRouter := r.PathPrefix("/servers").Subrouter()

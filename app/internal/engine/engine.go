@@ -4,68 +4,52 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	"github.com/korableg/V8I.Manager/app/api/client"
+	"github.com/korableg/V8I.Manager/app/api/onecdb"
 	"github.com/korableg/V8I.Manager/app/api/onecserver"
 	"github.com/korableg/V8I.Manager/app/api/onecserver/dbbuilder"
 	"github.com/korableg/V8I.Manager/app/api/onecserver/watcher"
-	"github.com/korableg/V8I.Manager/app/api/webinfobase"
-	"github.com/sirupsen/logrus"
-	"net/http"
-
-	"github.com/go-playground/validator/v10"
-	"github.com/korableg/V8I.Manager/app/api/onecdb"
 	"github.com/korableg/V8I.Manager/app/api/user"
 	"github.com/korableg/V8I.Manager/app/api/user/auth"
+	"github.com/korableg/V8I.Manager/app/api/webinfobase"
 	"github.com/korableg/V8I.Manager/app/internal/config"
 	"github.com/korableg/V8I.Manager/app/internal/sqlitedb"
 	"github.com/korableg/V8I.Manager/app/internal/transport/httpserver"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/fx"
+	"net/http"
 )
 
 type (
 	Engine struct {
 		httpSrvr *httpserver.HttpServer
 		sqliteDB *sqlitedb.SqliteDB
+		app      *fx.App
 	}
 )
 
 func NewEngine(cfgPath string) (*Engine, error) {
-	logrus.Info("starting engine")
+	logrus.Info("init the app")
+	fx.Decorate()
+	app := fx.New(
+		fx.Provide(validator.New),
+		fx.Provide(func(validate *validator.Validate) (config.Config, error) {
+			cfg, err := config.NewConfig(cfgPath, validate)
+			if err != nil {
+				return config.Config{}, fmt.Errorf("init config: %w", err)
+			}
 
-	validate := validator.New()
-
-	cfg, err := config.NewConfig(cfgPath, validate)
-	if err != nil {
-		return nil, fmt.Errorf("init config: %w", err)
-	}
-
-	sdb, err := sqlitedb.NewSqliteDB(cfg.Sqlite)
-	if err != nil {
-		return nil, fmt.Errorf("init sqlite db: %w", err)
-	}
-
-	userRepo, err := user.NewSqliteRepository(sdb)
-	if err != nil {
-		return nil, fmt.Errorf("init user repository: %w", err)
-	}
-
-	userHds, err := initUserHandlers(userRepo, validate)
-	if err != nil {
-		return nil, fmt.Errorf("user handlers: %w", err)
-	}
-
-	authHds, err := initAuthHandlers(userRepo, cfg.Auth, validate)
-	if err != nil {
-		return nil, fmt.Errorf("auth handlers: %w", err)
-	}
-
-	dbHds, dbCollector, v8ibuilder, err := initDBHandlers(sdb, validate)
-	if err != nil {
-		return nil, fmt.Errorf("onecdb handlers: %w", err)
-	}
-
-	onecServersHds, err := initOnecServerHandlers(sdb, dbCollector, validate)
-	if err != nil {
-		return nil, fmt.Errorf("onec servers handlers: %w", err)
-	}
+			return cfg, nil
+		}),
+		fx.Provide(sqlitedb.NewSqliteDB),
+		user.FX(),
+		auth.FX(),
+		onecdb.FX(),
+		onecserver.FX(),
+		client.FX(),
+		webinfobase.FX(),
+	)
 
 	webCommonInfoBasesHds, err := initWebCommonInfoBasesHandlers(cfg, validate, v8ibuilder)
 
@@ -82,6 +66,7 @@ func NewEngine(cfgPath string) (*Engine, error) {
 	return &Engine{
 		httpSrvr: httpSrvr,
 		sqliteDB: sdb,
+		app:      app,
 	}, nil
 }
 
@@ -107,39 +92,6 @@ func (en *Engine) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func initUserHandlers(userRepo user.Repository, validate *validator.Validate) (*user.Handlers, error) {
-	userSvc, err := user.NewService(userRepo)
-	if err != nil {
-		return nil, fmt.Errorf("init user service: %w", err)
-	}
-
-	if _, err = userSvc.Add(context.Background(), user.AddUserRequest{
-		Name:     "admin",
-		Password: "admin",
-		Role:     "admin",
-	}); err != nil && !errors.Is(err, user.ErrUserAlreadyCreated) {
-		return nil, fmt.Errorf("init admin user: %w", err)
-	}
-
-	userHds, err := user.NewHandlers(userSvc, validate)
-	if err != nil {
-		return nil, fmt.Errorf("init user handlers: %w", err)
-	}
-
-	return userHds, nil
-}
-
-func initAuthHandlers(userRepo user.Repository, authCfg auth.Config, validate *validator.Validate) (*auth.Handlers, error) {
-	authSvc := auth.NewAuth(userRepo, authCfg)
-
-	authHds, err := auth.NewHandlers(authSvc, validate)
-	if err != nil {
-		return nil, fmt.Errorf("init auth handlers: %w", err)
-	}
-
-	return authHds, nil
 }
 
 func initDBHandlers(sdb *sqlitedb.SqliteDB, validate *validator.Validate) (*onecdb.Handlers, onecdb.DBCollector, onecdb.V8IBuilder, error) {
@@ -198,4 +150,6 @@ func initWebCommonInfoBasesHandlers(cfg config.Config, validate *validator.Valid
 	}
 
 	return webCommonInfoBasesHds, nil
+
+	return nil, nil
 }

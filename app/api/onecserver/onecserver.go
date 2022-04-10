@@ -1,10 +1,34 @@
 package onecserver
 
-import "errors"
+import (
+	"context"
+	"errors"
+	"io"
+)
 
 //go:generate easyjson
 
 type (
+	Repository interface {
+		Add(ctx context.Context, u Server) (int64, error)
+		Get(ctx context.Context, ID int64) (Server, error)
+		GetList(ctx context.Context) ([]Server, error)
+		Update(ctx context.Context, u Server) error
+		UpdateHash(ctx context.Context, ID int64, hash string) error
+		UpdateWatch(ctx context.Context, ID int64, watch bool) error
+		Delete(ctx context.Context, ID int64) error
+	}
+
+	Service interface {
+		Add(ctx context.Context, u AddServerRequest) (int64, error)
+		Get(ctx context.Context, ID int64) (Server, error)
+		GetList(ctx context.Context) ([]Server, error)
+		Update(ctx context.Context, u UpdateServerRequest) error
+		SwitchWatching(ctx context.Context, ID int64) (bool, error)
+		Delete(ctx context.Context, ID int64) error
+		io.Closer
+	}
+
 	//easyjson:json
 	Server struct {
 		ID      int64  `json:"id"`

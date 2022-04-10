@@ -13,14 +13,6 @@ const (
 )
 
 type (
-	Service interface {
-		Add(ctx context.Context, u AddUserRequest) (int64, error)
-		Get(ctx context.Context, ID int64) (User, error)
-		GetList(ctx context.Context) ([]User, error)
-		Update(ctx context.Context, u UpdateUserRequest) error
-		Delete(ctx context.Context, ID int64) error
-	}
-
 	service struct {
 		userRepo Repository
 	}
@@ -33,6 +25,14 @@ func NewService(userRepo Repository) (*service, error) {
 
 	s := &service{
 		userRepo: userRepo,
+	}
+
+	if _, err := s.Add(context.Background(), AddUserRequest{
+		Name:     "admin",
+		Password: "admin",
+		Role:     "admin",
+	}); err != nil && !errors.Is(err, ErrUserAlreadyCreated) {
+		return nil, fmt.Errorf("init admin user: %w", err)
 	}
 
 	return s, nil

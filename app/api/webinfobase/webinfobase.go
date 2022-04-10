@@ -1,10 +1,22 @@
 package webinfobase
 
 import (
+	"context"
 	"encoding/xml"
 )
 
 type (
+	Config struct {
+		Address string `yaml:"address"`
+		Port    int64  `yaml:"port"`
+	}
+
+	Service interface {
+		WSDL() []byte
+		CheckInfoBases(ctx context.Context, clientID string) (CheckInfoBasesResponse, error)
+		GetInfoBases(ctx context.Context, clientID string) (GetInfoBasesResponse, error)
+	}
+
 	CheckInfoBasesResponse struct {
 		URL     string
 		Changed bool

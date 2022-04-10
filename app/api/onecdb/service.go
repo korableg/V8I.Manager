@@ -9,22 +9,6 @@ import (
 )
 
 type (
-	DBCollector interface {
-		Collect(db ...DB) error
-	}
-
-	V8IBuilder interface {
-		BuildV8I(ctx context.Context) (string, error)
-	}
-
-	Service interface {
-		Add(ctx context.Context, reqDB AddDBRequest) (int64, error)
-		Get(ctx context.Context, ID int64) (DB, error)
-		GetList(ctx context.Context) ([]DB, error)
-		Update(ctx context.Context, reqDB UpdateDBRequest) error
-		Delete(ctx context.Context, ID int64) error
-	}
-
 	service struct {
 		dbRepo Repository
 	}

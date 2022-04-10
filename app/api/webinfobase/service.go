@@ -15,12 +15,6 @@ import (
 var wsdlTmplt string
 
 type (
-	Service interface {
-		WSDL() []byte
-		CheckInfoBases(ctx context.Context, clientID string) (CheckInfoBasesResponse, error)
-		GetInfoBases(ctx context.Context, clientID string) (GetInfoBasesResponse, error)
-	}
-
 	service struct {
 		wsdl          []byte
 		v8iBuilder    onecdb.V8IBuilder
@@ -28,7 +22,7 @@ type (
 	}
 )
 
-func NewService(address string, port int, v8iBuilder onecdb.V8IBuilder, clientService client.Service) (*service, error) {
+func NewService(cfg Config, v8iBuilder onecdb.V8IBuilder, clientService client.Service) (*service, error) {
 	if v8iBuilder == nil {
 		return nil, errors.New("v8i builder is not defined")
 	}
@@ -43,7 +37,7 @@ func NewService(address string, port int, v8iBuilder onecdb.V8IBuilder, clientSe
 	}
 
 	buf := bytes.NewBuffer(nil)
-	baseURL := fmt.Sprintf("http://%s:%d", address, port)
+	baseURL := fmt.Sprintf("http://%s:%d", cfg.Address, cfg.Port)
 	if err = w.Execute(buf, baseURL); err != nil {
 		return nil, fmt.Errorf("execute wsdl template: %w", err)
 	}

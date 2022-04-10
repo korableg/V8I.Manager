@@ -2,7 +2,10 @@ package onecdb
 
 //go:generate easyjson
 
-import "github.com/google/uuid"
+import (
+	"context"
+	"github.com/google/uuid"
+)
 
 const (
 	ClientConnectionSpeedNormal = "normal"
@@ -18,6 +21,30 @@ const (
 )
 
 type (
+	Repository interface {
+		Add(ctx context.Context, db DB) (int64, error)
+		Get(ctx context.Context, id int64) (DB, error)
+		GetList(ctx context.Context) ([]DB, error)
+		Update(ctx context.Context, db DB) error
+		Delete(ctx context.Context, id int64) error
+	}
+
+	DBCollector interface {
+		Collect(db ...DB) error
+	}
+
+	V8IBuilder interface {
+		BuildV8I(ctx context.Context) (string, error)
+	}
+
+	Service interface {
+		Add(ctx context.Context, reqDB AddDBRequest) (int64, error)
+		Get(ctx context.Context, ID int64) (DB, error)
+		GetList(ctx context.Context) ([]DB, error)
+		Update(ctx context.Context, reqDB UpdateDBRequest) error
+		Delete(ctx context.Context, ID int64) error
+	}
+
 	// DB Description of v8i file: https://its.1c.ru/db/v838doc#bookmark:adm:TI000000368
 	//easyjson:json
 	DB struct {
